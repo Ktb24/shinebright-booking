@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shine Bright – NHS Booking Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #F8F7F4; color: #1A1A2E; min-height: 100vh; }
+
+    .header {
+      background: white; border-bottom: 1px solid #E5E7EB;
+      padding: 0 32px; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, #0D7377, #14BDAC);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px;
+    }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; line-height: 1.1; }
+    .logo-sub { font-size: 10px; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .btn { border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #0D7377; color: white; }
+    .btn-outline { background: white; border: 1.5px solid #E5E7EB; color: #374151; }
+    .btn-soft { background: #F0FDFB; border: 1px solid #99E6E3; color: #0D7377; width: 100%; margin-top: 14px; padding: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 7px; font-family: 'DM Sans', sans-serif; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    .screen { animation: fadeUp 0.35s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Loading state */
+    .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 16px; }
+    .loading-spinner { width: 36px; height: 36px; border: 3px solid #99E6E3; border-top-color: #0D7377; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loading-text { font-size: 14px; color: #6B7280; }
+
+    /* Error banner */
+    .error-banner { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #991B1B; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    .stat-card { background: white; border-radius: 12px; padding: 18px 20px; border: 1px solid #F3F4F6; }
+    .stat-label { font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .stat-value { font-size: 24px; font-weight: 700; font-family: 'Playfair Display', serif; }
+    .stat-suffix { font-size: 13px; font-weight: 500; color: #9CA3AF; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid #E5E7EB; cursor: pointer; background: white; color: #6B7280; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+    .tab.active { background: #0D7377; border-color: #0D7377; color: white; }
+
+    /* Cohort cards */
+    .cohort-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .cohort-card { background: white; border-radius: 14px; padding: 20px 22px; border: 1px solid #F3F4F6; }
+    .cohort-card.full { border-color: #FEE2E2; }
+    .cohort-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .cohort-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .cohort-run { font-size: 12px; color: #9CA3AF; font-weight: 600; }
+    .full-badge { background: #FEE2E2; color: #991B1B; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; letter-spacing: 0.05em; }
+    .cap-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .cap-count { font-size: 12px; color: #6B7280; }
+    .cap-left { font-size: 12px; font-weight: 600; }
+    .cap-track { background: #E5E7EB; border-radius: 4px; height: 6px; overflow: hidden; }
+    .cap-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+    .session-list { margin-top: 12px; display: flex; flex-direction: column; gap: 3px; }
+    .session-row { font-size: 12px; color: #6B7280; display: flex; gap: 6px; }
+    .session-num { color: #D1D5DB; }
+
+    /* Form */
+    .form-card { background: white; border-radius: 14px; padding: 28px 32px; border: 1px solid #F3F4F6; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: #374151; }
+    input, select {
+      border: 1.5px solid #E5E7EB; border-radius: 8px; padding: 9px 12px;
+      font-size: 13px; font-family: 'DM Sans', sans-serif; color: #1A1A2E;
+      outline: none; transition: border-color 0.15s; background: white;
+    }
+    input:focus, select:focus { border-color: #0D7377; }
+    input.error, select.error { border-color: #EF4444; }
+    .field-error { font-size: 11px; color: #EF4444; }
+
+    /* Table */
+    .table-wrap { border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden; margin-bottom: 24px; background: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 10px 14px; text-align: left; font-weight: 600; color: #6B7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; }
+    td { padding: 10px 14px; border-top: 1px solid #F3F4F6; }
+    tr.even { background: white; } tr.odd { background: #FAFAFA; }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-cohort { background: #EDE9FE; color: #5B21B6; }
+    .badge-enrolled { background: #CCEFEE; color: #0D7377; }
+
+    /* Submit */
+    .submit-row { display: flex; gap: 10px; align-items: center; margin-top: 20px; }
+    .btn-submit { background: #0D7377; color: white; border: none; border-radius: 9px; padding: 12px 28px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
+    .btn-submit:disabled { background: #CCEFEE; color: #0D7377; cursor: default; opacity: 1; }
+    .spinner { width: 14px; height: 14px; border: 2px solid #0D7377; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+    /* Confirmation */
+    .confirm-banner { background: linear-gradient(135deg, #0D7377 0%, #14BDAC 100%); border-radius: 16px; padding: 32px 36px; margin-bottom: 28px; color: white; }
+    .confirm-tick { font-size: 40px; margin-bottom: 8px; }
+    .confirm-title { font-size: 22px; font-weight: 700; font-family: 'Playfair Display', serif; margin-bottom: 6px; }
+    .confirm-sub { font-size: 14px; opacity: 0.85; }
+    .next-box { background: #F0FDFB; border: 1px solid #99E6E3; border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+    .next-title { font-size: 13px; font-weight: 600; color: #0D7377; margin-bottom: 12px; }
+    .next-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .next-icon { font-size: 16px; }
+    .next-item-title { font-size: 13px; font-weight: 600; color: #1F2937; }
+    .next-item-desc { font-size: 12px; color: #6B7280; }
+
+    .page-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .page-sub { color: #6B7280; font-size: 14px; margin-bottom: 28px; }
+    .section-title { font-size: 22px; font-family: 'Playfair Display', serif; font-weight: 700; margin-bottom: 4px; }
+    .section-sub { color: #6B7280; font-size: 14px; margin-bottom: 24px; }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .cohort-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .header { padding: 0 16px; }
+      .container { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">✦</div>
+    <div>
+      <div class="logo-text">Shine Bright</div>
+      <div class="logo-sub">NHS Staff Booking Portal</div>
+    </div>
+  </div>
+  <div id="header-actions"></div>
+</header>
+
+<main class="container">
+  <div id="app"></div>
+</main>
+
+<script>
+// ═══════════════════ AIRTABLE CONFIG ═══════════════════
+const AT_TOKEN   = "pat32sTuv0tYV17sS.c2aa2edaad85c2cccb4c35bb2f0cd71596043df0417f1df112022359648ed89f";
+const AT_BASE    = "appq84GCeVJCBKn5b";
+const AT_URL     = `https://api.airtable.com/v0/${AT_BASE}`;
+const HEADERS    = { "Authorization": `Bearer ${AT_TOKEN}`, "Content-Type": "application/json" };
+
+// ═══════════════════ AIRTABLE API ═══════════════════
+
+async function fetchCohorts() {
+  const res = await fetch(`${AT_URL}/Cohorts?sort[0][field]=Name&sort[0][direction]=asc`, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Airtable error: ${res.status}`);
+  const data = await res.json();
+  return data.records.map(r => ({
+    id:       r.id,
+    name:     r.fields["Name"]     || "",
+    run:      r.fields["Run"]      || "",
+    enrolled: r.fields["Enrolled"] || 0,
+    capacity: r.fields["Capacity"] || 150,
+    session1: r.fields["Session 1 Date"] || "",
+    session2: r.fields["Session 2 Date"] || "",
+    session3: r.fields["Session 3 Date"] || "",
+  }));
+}
+
+async function createParticipant(fields) {
+  const res = await fetch(`${AT_URL}/Participants`, {
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `Airtable error: ${res.status}`);
+  }
+  return res.json();
+}
+
+async function updateCohortCount(cohortId, newCount) {
+  const res = await fetch(`${AT_URL}/Cohorts/${cohortId}`, {
+    method: "PATCH",
+    headers: HEADERS,
+    body: JSON.stringify({ fields: { "Enrolled": newCount } })
+  });
+  if (!res.ok) throw new Error(`Failed to update cohort count`);
+  return res.json();
+}
+
+// ═══════════════════ STATE ═══════════════════
+
+let state = {
+  view:       "loading",   // loading | dashboard | enrol | confirmed | error
+  activeTab:  "all",
+  cohorts:    [],
+  loadError:  null,
+  submitting: false,
+  submitError: null,
+  confirmed:  null,        // the submitted participant record
+  form: {
+    firstName: "", lastName: "", email: "",
+    jobTitle: "", nhsOrg: "", cohortId: "",
+  },
+  formErrors: {},
+};
+
+function setState(updates) {
+  Object.assign(state, updates);
+  render();
+}
+
+// ═══════════════════ INIT ═══════════════════
+
+async function init() {
+  try {
+    const cohorts = await fetchCohorts();
+    setState({ view: "dashboard", cohorts });
+  } catch (e) {
+    setState({ view: "error", loadError: e.message });
+  }
+}
+
+// ═══════════════════ RENDER ═══════════════════
+
+function render() {
+  document.getElementById("app").innerHTML = buildApp();
+  document.getElementById("header-actions").innerHTML = buildHeaderActions();
+  attachEvents();
+}
+
+function buildHeaderActions() {
+  if (state.view === "dashboard") {
+    return `<button class="btn btn-primary" onclick="goEnrol()">+ Enrol Staff</button>`;
+  }
+  if (state.view === "enrol") {
+    return `<button class="btn btn-outline" onclick="setState({view:'dashboard'})">← Dashboard</button>`;
+  }
+  if (state.view === "confirmed") {
+    return `<button class="btn btn-outline" onclick="setState({view:'dashboard'})">← Dashboard</button>`;
+  }
+  return "";
+}
+
+function buildApp() {
+  if (state.view === "loading")   return buildLoading();
+  if (state.view === "error")     return buildError();
+  if (state.view === "dashboard") return buildDashboard();
+  if (state.view === "enrol")     return buildEnrolForm();
+  if (state.view === "confirmed") return buildConfirmed();
+  return "";
+}
+
+// ─── LOADING ───
+function buildLoading() {
+  return `
+    <div class="loading-wrap">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading programme data…</div>
+    </div>`;
+}
+
+// ─── ERROR ───
+function buildError() {
+  return `
+    <div class="screen">
+      <div class="error-banner">
+        ⚠ Could not connect to the database: ${state.loadError}<br><br>
+        Please check your internet connection or contact your programme administrator.
+      </div>
+      <button class="btn btn-primary" onclick="init()">Try again</button>
+    </div>`;
+}
+
+// ─── DASHBOARD ───
+function buildDashboard() {
+  const total    = state.cohorts.reduce((s,c) => s + c.enrolled, 0);
+  const totalCap = state.cohorts.reduce((s,c) => s + c.capacity, 0);
+  const open     = state.cohorts.filter(c => c.enrolled < c.capacity).length;
+  const full     = state.cohorts.filter(c => c.enrolled >= c.capacity).length;
+
+  const filtered = state.activeTab === "all"
+    ? state.cohorts
+    : state.cohorts.filter(c => c.name.toLowerCase().includes(state.activeTab));
+
+  // Build unique cohort name tabs
+  const names = [...new Set(state.cohorts.map(c => c.name))];
+
+  const stats = [
+    { label:"Total enrolled",    value: total,      suffix: ` / ${totalCap}`, color:"#0D7377" },
+    { label:"Cohorts open",      value: open,       suffix: " of " + state.cohorts.length, color:"#14BDAC" },
+    { label:"Fully booked",      value: full,       suffix: " cohorts",       color:"#F59E0B" },
+    { label:"Target completion", value:"Mar 2027",  suffix: "",               color:"#6B3FA0" },
+  ];
+
+  return `
+  <div class="screen">
+    <div class="page-title">Programme Overview</div>
+    <div class="page-sub">East of England NHS Region · April 2026 – March 2027</div>
+
+    <div class="stats-grid">
+      ${stats.map(s => `
+        <div class="stat-card">
+          <div class="stat-label">${s.label}</div>
+          <div class="stat-value" style="color:${s.color}">${s.value}<span class="stat-suffix">${s.suffix}</span></div>
+        </div>`).join("")}
+    </div>
+
+    <div class="tabs">
+      <button class="tab ${state.activeTab==="all"?"active":""}" onclick="setState({activeTab:'all'})">All cohorts</button>
+      ${names.map((n,i) => {
+        const key = `cohort ${i+1}`;
+        const label = `Cohort ${i+1}`;
+        return `<button class="tab ${state.activeTab===key?"active":""}" onclick="setState({activeTab:'${key}'})">${label}</button>`;
+      }).join("")}
+    </div>
+
+    <div class="cohort-grid">
+      ${filtered.map(c => buildCohortCard(c)).join("")}
+    </div>
+  </div>`;
+}
+
+function buildCohortCard(c) {
+  const full  = c.enrolled >= c.capacity;
+  const pct   = Math.min(c.enrolled / c.capacity * 100, 100);
+  const color = full ? "#EF4444" : pct > 70 ? "#F59E0B" : "#10B981";
+  const sessions = [c.session1, c.session2, c.session3].filter(Boolean);
+
+  // Pick accent colour based on cohort name
+  const colors = ["#0D7377","#1B4F72","#6B3FA0"];
+  const idx = state.cohorts.findIndex(x => x.id === c.id);
+  const accent = colors[Math.floor(idx / 2) % colors.length];
+
+  return `
+  <div class="cohort-card ${full?"full":""}" style="border-left:4px solid ${accent}">
+    <div class="cohort-header">
+      <div>
+        <div class="cohort-name">${c.name}</div>
+        <div class="cohort-run">${c.run}</div>
+      </div>
+      ${full ? `<span class="full-badge">FULL</span>` : ""}
+    </div>
+    <div class="cap-row">
+      <span class="cap-count">${c.enrolled} / ${c.capacity} enrolled</span>
+      <span class="cap-left" style="color:${color}">${full ? "FULL" : `${c.capacity - c.enrolled} places left`}</span>
+    </div>
+    <div class="cap-track"><div class="cap-fill" style="width:${pct}%;background:${color}"></div></div>
+    ${sessions.length ? `
+      <div class="session-list">
+        ${sessions.map((d,i) => `
+          <div class="session-row"><span class="session-num">Session ${i+1}</span><span>${d}</span></div>
+        `).join("")}
+      </div>` : ""}
+    ${!full ? `<button class="btn-soft" onclick="goEnrolCohort('${c.id}')">Enrol staff into this cohort →</button>` : ""}
+  </div>`;
+}
+
+// ─── ENROL FORM ───
+function buildEnrolForm() {
+  const availableCohorts = state.cohorts.filter(c => c.enrolled < c.capacity);
+  const f = state.form;
+  const e = state.formErrors;
+
+  return `
+  <div class="screen">
+    <div class="section-title">Enrol a staff member</div>
+    <div class="section-sub">Complete the details below. A welcome email and Teams invites will be sent automatically on submission.</div>
+
+    ${state.submitError ? `<div class="error-banner">⚠ ${state.submitError}</div>` : ""}
+
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="firstName">First name *</label>
+          <input id="firstName" type="text" value="${f.firstName}" placeholder="e.g. Sarah" class="${e.firstName?"error":""}">
+          ${e.firstName ? `<span class="field-error">${e.firstName}</span>` : ""}
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last name *</label>
+          <input id="lastName" type="text" value="${f.lastName}" placeholder="e.g. Ahmed" class="${e.lastName?"error":""}">
+          ${e.lastName ? `<span class="field-error">${e.lastName}</span>` : ""}
+        </div>
+        <div class="form-group full-width">
+          <label for="email">NHS email address *</label>
+          <input id="email" type="email" value="${f.email}" placeholder="e.g. s.ahmed@nhs.net" class="${e.email?"error":""}">
+          ${e.email ? `<span class="field-error">${e.email}</span>` : ""}
+        </div>
+        <div class="form-group">
+          <label for="jobTitle">Job title *</label>
+          <input id="jobTitle" type="text" value="${f.jobTitle}" placeholder="e.g. Staff Nurse" class="${e.jobTitle?"error":""}">
+          ${e.jobTitle ? `<span class="field-error">${e.jobTitle}</span>` : ""}
+        </div>
+        <div class="form-group">
+          <label for="nhsOrg">NHS organisation *</label>
+          <input id="nhsOrg" type="text" value="${f.nhsOrg}" placeholder="e.g. Cambridge University Hospitals" class="${e.nhsOrg?"error":""}">
+          ${e.nhsOrg ? `<span class="field-error">${e.nhsOrg}</span>` : ""}
+        </div>
+        <div class="form-group full-width">
+          <label for="cohortId">Cohort *</label>
+          <select id="cohortId" class="${e.cohortId?"error":""}">
+            <option value="">— Select a cohort —</option>
+            ${availableCohorts.map(c => `
+              <option value="${c.id}" ${f.cohortId===c.id?"selected":""}>
+                ${c.name} · ${c.run} (${c.capacity - c.enrolled} places left)
+              </option>`).join("")}
+          </select>
+          ${e.cohortId ? `<span class="field-error">${e.cohortId}</span>` : ""}
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <button class="btn-submit" id="submit-btn" onclick="handleSubmit()" ${state.submitting?"disabled":""}>
+          ${state.submitting
+            ? `<span class="spinner"></span> Submitting…`
+            : "Confirm enrolment"}
+        </button>
+        <button class="btn btn-outline" onclick="setState({view:'dashboard'})">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── CONFIRMED ───
+function buildConfirmed() {
+  const p = state.confirmed;
+  const cohort = state.cohorts.find(c => c.id === p.cohortId);
+  const next = [
+    ["📧","Welcome email","Sent immediately with programme materials and FAQs"],
+    ["📅","Teams invite","Calendar invites for all 3 sessions sent within 5 minutes"],
+    ["🔔","Reminders","Automatic reminder 48 hours before each session"],
+    ["💬","Post-session nudge","Behavioural exercises sent after each session"],
+  ];
+
+  return `
+  <div class="screen">
+    <div class="confirm-banner">
+      <div class="confirm-tick">✓</div>
+      <div class="confirm-title">Enrolment confirmed</div>
+      <div class="confirm-sub">${p.firstName} ${p.lastName} has been enrolled. Welcome email and Teams invites will be sent to ${p.email} automatically.</div>
+    </div>
+
+    <div class="next-box">
+      <div class="next-title">What happens next</div>
+      ${next.map(([icon,title,desc]) => `
+        <div class="next-item">
+          <span class="next-icon">${icon}</span>
+          <div>
+            <div class="next-item-title">${title}</div>
+            <div class="next-item-desc">${desc}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+
+    <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px">Enrolment summary</div>
+    <div class="table-wrap" style="margin-bottom:24px">
+      <table>
+        <tr class="even"><th>Name</th><td style="font-weight:500">${p.firstName} ${p.lastName}</td></tr>
+        <tr class="odd"><th>Email</th><td style="color:#6B7280">${p.email}</td></tr>
+        <tr class="even"><th>Job title</th><td style="color:#6B7280">${p.jobTitle}</td></tr>
+        <tr class="odd"><th>Organisation</th><td style="color:#6B7280">${p.nhsOrg}</td></tr>
+        <tr class="even"><th>Cohort</th><td><span class="badge badge-cohort">${cohort ? cohort.name + " · " + cohort.run : ""}</span></td></tr>
+        <tr class="odd"><th>Status</th><td><span class="badge badge-enrolled">● Enrolled</span></td></tr>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="goEnrol()">Enrol another</button>
+      <button class="btn btn-outline" onclick="setState({view:'dashboard'})">← Back to dashboard</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════ EVENTS ═══════════════════
+
+function attachEvents() {
+  // Live-sync form inputs to state
+  ["firstName","lastName","email","jobTitle","nhsOrg","cohortId"].forEach(field => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.addEventListener("input",  () => { state.form[field] = el.value; state.formErrors[field] = ""; });
+      el.addEventListener("change", () => { state.form[field] = el.value; state.formErrors[field] = ""; });
+    }
+  });
+}
+
+function goEnrol() {
+  setState({ view:"enrol", submitError: null, formErrors: {} });
+}
+
+function goEnrolCohort(cohortId) {
+  state.form.cohortId = cohortId;
+  setState({ view:"enrol", submitError: null, formErrors: {} });
+}
+
+function validateForm() {
+  const f = state.form;
+  const errors = {};
+  if (!f.firstName.trim()) errors.firstName = "Required";
+  if (!f.lastName.trim())  errors.lastName  = "Required";
+  if (!f.email.trim())     errors.email     = "Required";
+  else if (!f.email.includes("@")) errors.email = "Must be a valid email address";
+  if (!f.jobTitle.trim())  errors.jobTitle  = "Required";
+  if (!f.nhsOrg.trim())    errors.nhsOrg    = "Required";
+  if (!f.cohortId)         errors.cohortId  = "Please select a cohort";
+  return errors;
+}
+
+async function handleSubmit() {
+  if (state.submitting) return;
+
+  const errors = validateForm();
+  if (Object.keys(errors).length > 0) {
+    setState({ formErrors: errors });
+    return;
+  }
+
+  setState({ submitting: true, submitError: null });
+
+  const f = state.form;
+  const cohort = state.cohorts.find(c => c.id === f.cohortId);
+
+  try {
+    // 1. Write participant to Airtable
+    await createParticipant({
+      "Name":          f.firstName,
+      "Last Name":     f.lastName,
+      "Email":         f.email,
+      "Job Title":     f.jobTitle,
+      "NHS Org":       f.nhsOrg,
+      "Cohort ID":     cohort ? `${cohort.name} · ${cohort.run}` : f.cohortId,
+      "Status":        "Enrolled",
+      "Enrolled Date": new Date().toISOString().split("T")[0],
+    });
+
+    // 2. Increment enrolled count on the cohort
+    const newCount = (cohort.enrolled || 0) + 1;
+    await updateCohortCount(f.cohortId, newCount);
+
+    // 3. Update local cohort state
+    const updatedCohorts = state.cohorts.map(c =>
+      c.id === f.cohortId ? { ...c, enrolled: newCount } : c
+    );
+
+    // 4. Save confirmed participant and reset form
+    const confirmed = { ...f };
+    setState({
+      submitting: false,
+      cohorts: updatedCohorts,
+      confirmed,
+      view: "confirmed",
+      form: { firstName:"", lastName:"", email:"", jobTitle:"", nhsOrg:"", cohortId:"" },
+      formErrors: {},
+    });
+
+  } catch (err) {
+    setState({ submitting: false, submitError: err.message });
+  }
+}
+
+// ═══════════════════ START ═══════════════════
+render();
+init();
+</script>
+</body>
+</html>
